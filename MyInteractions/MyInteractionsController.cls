@@ -2,7 +2,7 @@
     String m_filter = 'CreatedDate = TODAY';
     
     public List<Task> getMyTasks(){
-       String query = 'SELECT Id, WhatId, What.Type, What.Name, what.Id, WhoId, Who.Type, Who.Name, Subject, Type, CreatedDate, OwnerId, ReminderTaskId__c, Phone__c, Mobile__c FROM Task WHERE ' + m_filter + ' AND OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\'  Order By CreatedDate desc LIMIT 15';
+       String query = 'SELECT Id, WhatId, What.Type, What.Name, what.Id, WhoId, Who.Type, Who.Name, Subject, Type, CreatedDate, OwnerId, ReminderTaskId__c FROM Task WHERE ' + m_filter + ' AND OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\'  Order By CreatedDate desc LIMIT 15';
        List<Task> tasks = Database.query(query);
        return tasks;
     }
