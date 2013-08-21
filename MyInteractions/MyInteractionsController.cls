@@ -1,9 +1,23 @@
 ﻿public with sharing class MyInteractionsController {
-    String m_filter = 'CreatedDate = TODAY';
+    private String m_filter = 'CreatedDate = TODAY';
+    private integer m_currentOffset = 0;
+    private integer m_pageSize = 10;
+    private integer m_totalResults;   
+    
+    public MyInteractionsController()
+    {
+       List<Task> tasks = Database.query(queryString());
+        m_totalResults = tasks.size();
+    }
+    
+    private String queryString(){
+        return 'SELECT Id, WhatId, What.Type, What.Name, what.Id, WhoId, Who.Type, Who.Name, Subject, Type, CreatedDate, OwnerId, ReminderTaskId__c FROM Task WHERE ' + m_filter + ' and OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\'  Order By CreatedDate desc';    
+    }
     
     public List<Task> getMyTasks(){
-       String query = 'SELECT Id, WhatId, What.Type, What.Name, what.Id, WhoId, Who.Type, Who.Name, Subject, Type, CreatedDate, OwnerId, ReminderTaskId__c FROM Task WHERE ' + m_filter + ' AND OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\'  Order By CreatedDate desc LIMIT 15';
+       String query = queryString() + ' LIMIT ' + m_pageSize  + ' OFFSET ' + m_currentOffset ;
        List<Task> tasks = Database.query(query);
+
        return tasks;
     }
 
@@ -24,7 +38,7 @@
        this.m_filter= filter ;
     }  
 
-      private Task m_task;
+    private Task m_task;
     public String taskForReminder
     {
         get;
@@ -91,4 +105,44 @@
         
         return l;
     }
+
+     public PageReference Beginning() {
+      m_currentOffset = 0;
+      return null;
+   }
+ 
+   public PageReference Previous() {
+      m_currentOffset -= m_pageSize ;
+      return null;
+   }
+ 
+   public PageReference Next() { 
+      m_currentOffset += m_pageSize ;
+      return null;
+   }
+ 
+   public PageReference End() {
+      m_currentOffset = m_totalResults- math.mod(m_totalResults, m_pageSize );
+      return null;
+   }
+ 
+   public Boolean getDisablePrevious() { 
+      if (m_currentOffset >0){
+	  return false;
+      }
+      else
+      {
+	  return true;
+      }
+   }
+ 
+   public Boolean getDisableNext() { 
+      if (m_currentOffset + m_pageSize  < m_totalResults){
+	  return false;
+      }
+      else
+      {
+	  return true;
+      }
+   }
 }

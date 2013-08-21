@@ -88,6 +88,14 @@
 
         </apex:dataTable>
       </apex:outputPanel>
+      <apex:pageBlockButtons location="bottom" >
+	<apex:outputPanel id="pageButtons">
+	  <apex:commandButton action="{!Beginning}" title="Beginning" value="<<" disabled="{!disablePrevious}" reRender="myInteractionsPanel,pageButtons"/>
+          <apex:commandButton action="{!Previous}" title="Previous" value="<" disabled="{!disablePrevious}" reRender="myInteractionsPanel,pageButtons"/>        
+          <apex:commandButton action="{!Next}" title="Next" value=">" disabled="{!disableNext}" reRender="myInteractionsPanel,pageButtons"/>
+          <apex:commandButton action="{!End}" title="End" value=">>" disabled="{!disableNext}" reRender="myInteractionsPanel,pageButtons"/>  
+         </apex:outputPanel>
+       </apex:pageBlockButtons>
     </apex:pageBlock>
   </apex:form>
 </apex:page>
