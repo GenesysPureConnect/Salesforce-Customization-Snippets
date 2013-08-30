@@ -65,7 +65,8 @@ public with sharing class MyInteractionsController {
     }
 
     private static String queryStringWhere(){
-       return 'WHERE ' + m_filter + ' and OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\' ;    
+        return 'WHERE OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\' ';            
+     // return 'WHERE ' + m_filter + ' and OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\' ;    
     }
     
     private static String queryStringSelect(){
