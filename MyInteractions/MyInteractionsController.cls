@@ -1,24 +1,91 @@
-﻿public with sharing class MyInteractionsController {
+public with sharing class MyInteractionsController {
+
+    public static integer PageSize = 10;
+        
     private String m_filter = 'CreatedDate = TODAY';
     private integer m_currentOffset = 0;
-    private integer m_pageSize = 10;
-    private integer m_totalResults;   
+    private integer m_totalResults;    
+    private Task m_task;
+    
+    //not sure if this is the best option here.  We want the phone and mobile off the who, but when selecting task.who.phone, it returns null.
+    public class CallRecord {
+        private Task m_task;
+        private String m_phone;
+        
+        public CallRecord(Task task)
+        {
+            m_task = task;  
+            if(task.who.type == 'Contact'){
+                Contact c = ((Contact)Database.query('Select Phone, MobilePhone FROM ' + task.who.type + ' WHERE id= \'' + task.who.id + '\'')[0]);
+                if(c.phone != null){
+                    m_phone = c.phone;
+                }
+                else{
+                    m_phone = c.mobilePhone;
+                }
+            }
+        }
+        
+        public String getSubject(){
+            return String.valueOf(m_task.Subject);
+        }
+        
+        public String getId(){
+            return String.valueOf(m_task.id);
+        }
+        
+        public String getRelatedTo(){
+            return m_task.what.name;
+        }
+        
+        public String getRelatedToId(){
+            return String.valueOf(m_task.what.id);
+        }
+        
+        public String getWhoName(){
+            return m_task.who.name;
+        }
+        
+         public String getWhoId(){
+            return String.valueOf(m_task.who.id);
+        }
+        
+        public String getReminderTaskId(){
+            return m_task.reminderTaskId__c;
+        }
+        
+        public String getPhone(){
+            return m_phone;
+        }
+    }
     
     public MyInteractionsController()
     {
-       List<Task> tasks = Database.query(queryString());
-        m_totalResults = tasks.size();
+       m_totalResults = Database.countQuery('select count() FROM Task ' + queryStringWhere());
     }
-    
-    private String queryString(){
-        return 'SELECT Id, WhatId, What.Type, What.Name, what.Id, WhoId, Who.Type, Who.Name, Subject, Type, CreatedDate, OwnerId, ReminderTaskId__c FROM Task WHERE ' + m_filter + ' and OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\'  Order By CreatedDate desc';    
-    }
-    
-    public List<Task> getMyTasks(){
-       String query = queryString() + ' LIMIT ' + m_pageSize  + ' OFFSET ' + m_currentOffset ;
-       List<Task> tasks = Database.query(query);
 
-       return tasks;
+    private static String queryStringWhere(){
+        return 'WHERE OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\' ';            
+     // return 'WHERE ' + m_filter + ' and OwnerId = \'' + UserInfo.getUserId() +'\' and CallObject!= \'\' ;    
+    }
+    
+    private static String queryStringSelect(){
+        return 'SELECT Id, WhatId, What.Type, What.Name, what.Id, WhoId, Who.Type, who.name, Subject, Type, CreatedDate, OwnerId, ReminderTaskId__c ';
+    }
+    
+    private static String queryString(){
+         return queryStringSelect() + ' FROM Task ' + queryStringWhere() + ' Order By CreatedDate desc';
+    }
+    
+    public List<CallRecord> getMyTasks(){
+        String query = queryString() + ' LIMIT ' + PageSize  + ' OFFSET ' + m_currentOffset ;
+        List<Task> tasks = Database.query(query);
+
+        List<CallRecord> records = new List<CallRecord>();
+        for(Task t: tasks){
+            records.add(new CallRecord(t));
+        }
+        return records;
     }
 
     public List<SelectOption> getItems() {
@@ -38,7 +105,6 @@
        this.m_filter= filter ;
     }  
 
-    private Task m_task;
     public String taskForReminder
     {
         get;
@@ -47,13 +113,14 @@
         }
     }
     
-    private Task getTask(String id)
+    public static Task getTask(String id)
     {
-        String query = 'SELECT Id, OwnerId, WhatId,WhoId,What.Name, Who.Name, ReminderTaskId__c  FROM Task WHERE id = \'' + id+ '\'';
+        String query = queryStringSelect() + ' FROM Task WHERE id = \'' + id+ '\'';
         List<Task> tasks = Database.query(query);
         return tasks[0];
     }
     
+    //start methods to create/clear the callback
     public PageReference processClearReminderClick(){
         Task reminderTask = getTask(m_task.ReminderTaskId__c);
         reminderTask.Status = 'Completed';
@@ -83,7 +150,7 @@
              OwnerId = m_task.OwnerId,
              WhatId = m_task.WhatId,
              WhoId = m_task.WhoId,
-             Subject = subject  + ' ' + getLocalDateTime(callbacktime) ,
+             Subject = subject  + ' ' + getLocalDateTime(callbacktime).format('M-d-yyyy h:mm:ss a'),
     
              Priority = 'Normal',
              IsReminderSet = true,
@@ -105,44 +172,49 @@
         
         return l;
     }
-
-     public PageReference Beginning() {
+    
+    //Start methods needed for paging
+    public PageReference Beginning() {
       m_currentOffset = 0;
       return null;
-   }
+    }
  
-   public PageReference Previous() {
-      m_currentOffset -= m_pageSize ;
+    public PageReference Previous() {
+      m_currentOffset -= PageSize ;
       return null;
-   }
+    }
  
-   public PageReference Next() { 
-      m_currentOffset += m_pageSize ;
+    public PageReference Next() { 
+      m_currentOffset += PageSize ;
       return null;
-   }
+    }
  
-   public PageReference End() {
-      m_currentOffset = m_totalResults- math.mod(m_totalResults, m_pageSize );
+    public PageReference End() {
+      m_currentOffset = m_totalResults- math.mod(m_totalResults, PageSize );
       return null;
-   }
+    }
  
-   public Boolean getDisablePrevious() { 
+    public Boolean getDisablePrevious() { 
       if (m_currentOffset >0){
-	  return false;
+          return false;
       }
       else
       {
-	  return true;
+          return true;
       }
-   }
+    }
  
-   public Boolean getDisableNext() { 
-      if (m_currentOffset + m_pageSize  < m_totalResults){
-	  return false;
+    public Boolean getDisableNext() { 
+      if (m_currentOffset + PageSize  < m_totalResults){
+          return false;
       }
       else
       {
-	  return true;
+          return true;
       }
-   }
+    }
+   
+    public integer getCurrentOffset(){
+       return m_currentOffset;
+    }
 }
