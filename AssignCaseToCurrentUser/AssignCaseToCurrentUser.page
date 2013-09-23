@@ -1,0 +1,11 @@
+<apex:page standardController="Case"
+            extensions="AssignCaseController"
+            action="{!autoRun}">
+    <apex:sectionHeader title="Auto-running apex code"/>
+    <apex:outputpanel>
+    You tried calling Apex Code from a button.  If you see this page, something went wrong.  You should have been redirected back to the record you clicked the button from. 
+    
+    </apex:outputpanel>
+
+</apex:page>
+
